@@ -13,32 +13,6 @@
 #define kYoutubeDataURL      @"https://gdata.youtube.com/feeds/api/videos/%@?alt=json"
 #define kUserAgent           @"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.79 Safari/537.4"
 
-@interface NSString (QueryString)
-
-/**
- Parses a query string
-
- @return key value dictionary with each parameter as an array
- */
-- (NSMutableDictionary *)dictionaryFromQueryStringComponents;
-
-/**
- Convenient method for decoding a html encoded string
- */
-- (NSString *)stringByDecodingURLFormat;
-
-@end
-
-@interface NSURL (QueryString)
-
-/**
- Parses a query string of an NSURL
-
- @return key value dictionary with each parameter as an array
- */
-- (NSMutableDictionary *)dictionaryForQueryString;
-
-@end
 
 @implementation NSString (QueryString)
 
@@ -101,14 +75,14 @@
     return youtubeID;
 }
 
-+ (NSArray *)audioM4aWithYoutubeID:(NSString *)vid {
++ (NSArray<NSDictionary *> *)audioM4aWithYoutubeID:(NSString *)vid {
     if (vid) {
         NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@", kYoutubeInfoURL, vid]];
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
         [request setValue:kUserAgent forHTTPHeaderField:@"User-Agent"];
         [request setHTTPMethod:@"GET"];
 
-        __block NSArray *data = nil;
+        __block NSArray<NSDictionary *> *data = nil;
 
         // Lock threads with semaphore
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -278,11 +252,11 @@
     }
 }
 
-+ (void)audioM4aInYoutubeID:(NSString *)vid completeBlock:(void (^)(NSArray *, NSError *))completeBlock {
++ (void)audioM4aInYoutubeID:(NSString *)vid completeBlock:(void (^)(NSArray<NSDictionary *> *, NSError *))completeBlock {
     if (vid) {
         dispatch_queue_t queue = dispatch_queue_create("me.hiddencode.yt.backgroundqueue", 0);
         dispatch_async(queue, ^{
-            NSArray *info = [[self class] audioM4aWithYoutubeID:vid];
+            NSArray<NSDictionary *> *info = [[self class] audioM4aWithYoutubeID:vid];
             dispatch_async(dispatch_get_main_queue(), ^{
                 completeBlock(info, nil);
             });
