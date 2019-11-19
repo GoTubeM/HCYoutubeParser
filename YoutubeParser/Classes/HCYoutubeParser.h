@@ -74,6 +74,12 @@ typedef enum {
 + (NSDictionary *)h264videosWithYoutubeID:(NSString *)youtubeID;
 
 /**
+ Get mp4a format audios
+ 
+ */
++ (NSArray *)audioM4aWithYoutubeID:(NSString *)vid;
+
+/**
  Block based method for retreiving a iOS supported video link
  
  @param youtubeURL the the complete youtube video url
@@ -82,6 +88,9 @@ typedef enum {
  */
 + (void)h264videosWithYoutubeURL:(NSURL *)youtubeURL
                    completeBlock:(void(^)(NSDictionary *videoDictionary, NSError *error))completeBlock;
+
++ (void)audioM4aInYoutubeID:(NSString *)vid
+              completeBlock:(void(^)(NSArray *playUrls, NSError *error))completeBlock;
 
 /**
  Method for retreiving a thumbnail url for wanted youtube id

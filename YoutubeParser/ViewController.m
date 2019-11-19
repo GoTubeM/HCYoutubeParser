@@ -147,7 +147,9 @@ typedef void(^DrawRectBlock)(CGRect rect);
     [HCYoutubeParser thumbnailForYoutubeURL:url thumbnailSize:YouTubeThumbnailDefaultHighQuality completeBlock:^(UIImage *image, NSError *error) {
         
         if (!error) {
-            [_playButton setBackgroundImage:image forState:UIControlStateNormal];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [_playButton setBackgroundImage:image forState:UIControlStateNormal];
+            });
             
             [HCYoutubeParser h264videosWithYoutubeURL:url completeBlock:^(NSDictionary *videoDictionary, NSError *error) {
                 

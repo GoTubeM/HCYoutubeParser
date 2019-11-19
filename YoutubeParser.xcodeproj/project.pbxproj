@@ -265,6 +265,9 @@
 					326A0AAD1BEA0CCE002D323A = {
 						CreatedOnToolsVersion = 7.1;
 					};
+					3285C47C157CEFFB00096202 = {
+						DevelopmentTeam = QGKWR4BM5D;
+					};
 				};
 			};
 			buildConfigurationList = 3285C477157CEFFA00096202 /* Build configuration list for PBXProject "YoutubeParser" */;
@@ -272,6 +275,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -488,6 +492,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
+				DEVELOPMENT_TEAM = QGKWR4BM5D;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "YoutubeParser/YoutubeParser-Prefix.pch";
 				INFOPLIST_FILE = "YoutubeParser/YoutubeParser-Info.plist";
@@ -502,6 +507,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
+				DEVELOPMENT_TEAM = QGKWR4BM5D;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "YoutubeParser/YoutubeParser-Prefix.pch";
 				INFOPLIST_FILE = "YoutubeParser/YoutubeParser-Info.plist";
@@ -522,6 +528,7 @@
 				326A0AC01BEA0CCE002D323A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		3285C477157CEFFA00096202 /* Build configuration list for PBXProject "YoutubeParser" */ = {
 			isa = XCConfigurationList;
