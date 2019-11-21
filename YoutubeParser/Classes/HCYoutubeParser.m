@@ -8,10 +8,11 @@
 
 #import "HCYoutubeParser.h"
 
-#define kYoutubeInfoURL      @"https://www.youtube.com/get_video_info?video_id="
+#define kYoutubeInfoURL      @"https://www.youtube.com/get_video_info?html5=1&video_id="
+#define kYoutubeInfoTokenURL      @"https://www.youtube.com/get_video_info?video_id=%@&t=%@&fmt=140"
 #define kYoutubeThumbnailURL @"https://img.youtube.com/vi/%@/%@.jpg"
 #define kYoutubeDataURL      @"https://gdata.youtube.com/feeds/api/videos/%@?alt=json"
-#define kUserAgent           @"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.79 Safari/537.4"
+#define kUserAgent           @"Mozilla/6.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.4"
 
 
 @implementation NSString (QueryString)
@@ -75,15 +76,64 @@
     return youtubeID;
 }
 
++ (NSArray<NSDictionary *> *)audioinfosWithVid:(NSString *)vid token:(NSString *)token {
+    __block NSArray<NSDictionary *> *data = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:kYoutubeInfoTokenURL, vid, token]];
+    NSLog(@"tokenurl : %@", url);
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request setValue:kUserAgent forHTTPHeaderField:@"User-Agent"];
+    [request setHTTPMethod:@"GET"];
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable datares, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        NSLog(@"ret :%@", error);
+        NSLog(@"respheader: %@", [(NSHTTPURLResponse *)response allHeaderFields]);
+        if (!error) {
+            NSMutableArray *audios = @[].mutableCopy;
+
+            NSString *responseString = [[NSString alloc] initWithData:datares encoding:NSUTF8StringEncoding];
+            NSMutableDictionary *parts = [responseString dictionaryFromQueryStringComponents];
+            NSLog(@"second parts :%@", parts);
+            NSString *player_response = [parts[@"player_response"] firstObject];
+            NSDictionary *player_dict = [NSJSONSerialization JSONObjectWithData:[player_response dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingFragmentsAllowed error:nil];
+            NSDictionary *playstatus = player_dict[@"playabilitStatus"];
+            if (![@"ok" isEqualToString:[playstatus[@"status"] lowercaseString]]) {
+                dispatch_semaphore_signal(semaphore);
+                return ;
+            }
+            NSArray<NSDictionary *> *formats = player_dict[@"streamingData"][@"adaptiveFormats"];
+            [formats enumerateObjectsUsingBlock:^(NSDictionary *_Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
+                if ([obj[@"mimeType"] rangeOfString:@"audio/mp4"].length > 0) {
+                    NSDictionary *audioinfo = @{
+                        @"itag": obj[@"itag"],
+                        @"url": obj[@"url"]
+                    };
+                    [audios addObject:audioinfo];
+                }
+            }];
+            
+            data = audios;
+            
+        }
+        
+        dispatch_semaphore_signal(semaphore);
+    }] resume] ;
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+
+    return data;
+}
+
 + (NSArray<NSDictionary *> *)audioM4aWithYoutubeID:(NSString *)vid {
     if (vid) {
         NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@", kYoutubeInfoURL, vid]];
+        NSLog(@"url : %@", url);
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
         [request setValue:kUserAgent forHTTPHeaderField:@"User-Agent"];
         [request setHTTPMethod:@"GET"];
 
         __block NSArray<NSDictionary *> *data = nil;
 
+        __block NSString *token = nil;
         // Lock threads with semaphore
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *_Nullable responseData, NSURLResponse *_Nullable response, NSError *_Nullable error) {
@@ -93,13 +143,24 @@
                 NSMutableDictionary *parts = [responseString dictionaryFromQueryStringComponents];
 
                 if (parts) {
+                    
                     NSMutableArray *audios = @[].mutableCopy;
-
+                    NSLog(@"parts :%@", parts);
                     NSString *player_response = [parts[@"player_response"] firstObject];
                     if (player_response) {
+                        NSLog(@"player_response :%@", player_response);
+                       
                         NSError *jerr = nil;
                         NSDictionary *player_dict = [NSJSONSerialization JSONObjectWithData:[player_response dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingFragmentsAllowed error:&jerr];
-                        NSLog(@"player_dict: %@",  player_dict[@"streamingData"]);
+                        NSDictionary *playstatus = player_dict[@"playabilityStatus"];
+                        if (![@"ok" isEqualToString:[playstatus[@"status"] lowercaseString]]) {
+                            
+                            token = [parts[@"account_playback_token"] firstObject];
+                            dispatch_semaphore_signal(semaphore);
+                            return ;
+                        }
+                                             
+                        NSLog(@"streamingData: %@",  player_dict[@"streamingData"]);
 
                         NSArray<NSDictionary *> *formats = player_dict[@"streamingData"][@"adaptiveFormats"];
                         [formats enumerateObjectsUsingBlock:^(NSDictionary *_Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
@@ -120,10 +181,17 @@
             dispatch_semaphore_signal(semaphore);
         }] resume];
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+        
+        if (token) {
+            data = [self.class audioinfosWithVid:vid token:token];
+        }
+        
         return data;
     }
     return nil;
 }
+
+
 
 + (NSDictionary *)h264videosWithYoutubeID:(NSString *)youtubeID {
     if (youtubeID) {
